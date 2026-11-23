@@ -1,8 +1,9 @@
- /// Chat message bubble: slide+fade entrance, selectable text, long-press menu.
+  /// Chat message bubble: slide+fade entrance, selectable text, long-press menu.
   library message_bubble;
 
   import 'package:flutter/material.dart';
   import 'package:flutter/services.dart';
+
   import '../models/chat_message.dart';
   import '../theme/app_theme.dart';
   import 'markdown_body.dart';
@@ -43,9 +44,9 @@
     }
 
     void _showMenu(BuildContext context) {
-      final theme = Theme.of(context);
-      final preset = context.read<AppProvider>().themeData.activePreset;
-      final isDark = theme.brightness == Brightness.dark;
+      final appProvider = context.read<AppProvider>();
+      final preset = appProvider.themeData.activePreset;
+      final isDark = Theme.of(context).brightness == Brightness.dark;
       final textColor = isDark ? Colors.white : Colors.black;
 
       showMenu(
@@ -71,11 +72,8 @@
               onTap: () async {
                 await Clipboard.setData(ClipboardData(text: widget.message.text));
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Copied to clipboard'),
-                      duration: const Duration(seconds: 1),
-                    ),
+                  ScaffoldMessenger.of(context).showWidgets(
+                    const Sn Duration(seconds: 1, child: const Text('Copied to clipboard')),
                   );
                 }
               },
@@ -89,8 +87,8 @@
               contentPadding: EdgeInsets.zero,
               visualDensity: VisualDensity.compact,
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const Sn Duration(seconds: 1, child: Text('Read aloud (Phase 7)')),
+                ScaffoldMessenger.of(context).showWidgets(
+                  const Sn Duration(seconds: 1, child: const Text('Read aloud (Phase 7)')),
                 );
               },
             ),
@@ -105,7 +103,7 @@
                 visualDensity: VisualDensity.compact,
                 onTap: () {
                   final chatProvider = context.read<ChatProvider>();
-                  chatProvider.regenerate();
+                  chatProvider.regenerate(context);
                 },
               ),
             ),
@@ -139,7 +137,7 @@
                 color: isUser
                     ? theme.colorScheme.primary.withValues(alpha: 0.85)
                     : theme.cardColor,
-                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.12),
                     blurRadius: 8,
@@ -207,13 +205,14 @@
                         await Clipboard.setData(ClipboardData(text: msg.text));
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showWidgets(
-                            Sn Duration(seconds: 1, child: const Text('Copied')),
+                            const Sn Duration(seconds: 1, child: const Text('Copied')),
                           );
                         }
                       },
                     ),
                   ),
-                ],                                                                                                 ),
+                ],
+              ),
             ),
           ),
         ),
