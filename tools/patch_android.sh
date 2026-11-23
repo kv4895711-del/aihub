@@ -1,107 +1,125 @@
-  #!/bin/bash
+ #!/bin/bash
   # tools/patch_android.sh
-  # Idempotent patcher: adds INTERNET, RECORD_AUDIO, RUN_COMMAND permission,
-  # queries for com.termux, and MainActivity.kt MethodChannel code.
-  # Run this after flutter create, before flutter build.
+  # Safe to run many times. Adds permissions + <queries> to AndroidManifest.xml
+  # and writes a MainActivity.kt with the Termux RUN_COMMAND MethodChannel.
+  # Run after "flutter create", before "flutter build apk".
 
   set -euo pipefail
 
   SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-  ANDROID_DIR="${SCRIPT_DIR}/../android"
+  ANDROID_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)/android"
 
   if [[ ! -d "$ANDROID_DIR" ]]; then
-    echo "ERROR: android/ directory not found. Run: flutter create --platforms=android ."
+    echo "ERROR: android/ folder not found. Run: flutter create --platforms=android ."
     exit 1
   fi
 
   MANIFEST="$ANDROID_DIR/app/src/main/AndroidManifest.xml"
-  MAINACTIVITY="$ANDROID_DIR/app/src/main/kotlin/com/aihub/ai_hub/MainActivity.kt"
+  KOTLIN_DIR="$ANDROID_DIR/app/src/main/kotlin/com/aihub/ai_hub"
+  MAINACTIVITY="$KOTLIN_DIR/MainActivity.kt"
 
-  # ── 1. AndroidManifest.xml patches ──────────────────────────────
-  if [[ -f "$MANIFEST" ]]; then
-    echo "Patching AndroidManifest.xml..."
-
-    # Add INTERNET permission if missing
-    if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
-      sed -i 's/<manifest/<manifest\n    <uses-permission android:name="android.permission.INTERNET"
-    fi
-
-    # Add RECORD_AUDIO permission if missing
-    if ! grep -q "android.permission.RECORD_AUDIO" "$MANIFEST"; then
-      sed -i 's/<manifest/<manifest\n    <uses-permission
-  android:name="android.permission.RECORD_AUDIO" \/>/' "$MANIFEST"
-    fi
-
-    # Add com.termux.permission.RUN_COMMAND permission if missing
-    if ! grep -q "com.termux.permission.RUN_COMMAND" "$MANIFEST"; then
-      sed -i 's/<manifest/<manifest\n    <uses-permission
-  android:name="com.termux.permission.RUN_COMMAND" \/>/' "$MANIFEST"
-    fi
-
-    # Add <queries> for com.termux if missing
-    if ! grep -q "com.termux" "$MANIFEST"; then
-      # Insert <queries> block right after <manifest ...> line
-      QUERIES='<queries>
-    <package android:name="com.termux" />
-  </queries>'
-      sed -i "0,/<manifest/ s//<manifest>\n    $QUERIES/" "$MANIFEST"
-    fi
+  if [[ ! -f "$MANIFEST" ]]; then
+    echo "ERROR: AndroidManifest.xml not found at $MANIFEST"
+    exit 1
   fi
 
-  # ── 2. MainActivity.kt patch ────────────────────────────────────
-  if [[ -f "$MAINACTIVITY" ]]; then
-    echo "Patching MainActivity.kt..."
+  # ── 1. Patch AndroidManifest.xml with python3 (idempotent) ─────────
+  echo "==> Patching AndroidManifest.xml"
+  python3 - "$MANIFEST" << 'PYEOF'
+  import sys, re
 
-    if ! grep -q "MethodChannel" "$MAINACTIVITY"; then
-      # Replace entire file with method channel implementation
-      cat > "$MAINACTIVITY" << 'EOF'
+  path = sys.argv[1]
+  with open(path, "r", encoding="utf-8") as f:
+      xml = f.read()
+
+  perms = [
+      'android.permission.INTERNET',
+      'android.permission.RECORD_AUDIO',
+      'android.permission.POST_NOTIFICATIONS',
+      'com.termux.permission.RUN_COMMAND',
+  ]
+
+  needed = [p for p in perms if p not in xml]
+  if needed:
+      lines = "".join(
+          '    <uses-permission android:name="%s" />\n' % p for p in needed
+      )
+      # Put permissions right after the opening <manifest ...> tag.
+      xml = re.sub(r'(<manifest\b[^>]*>\s*\n)', r'\1' + lines, xml, count=1)
+          '        <package android:name="com.termux" />\n'
+          '    </queries>\n'
+      )
+      # <queries> must be a direct child of <manifest>.
+      xml = re.sub(r'(<manifest\b[^>]*>\s*\n)', r'\1' + queries, xml, count=1)
+      print("    added <queries> for com.termux")
+  else:
+      print("    <queries> already present")
+
+  with open(path, "w", encoding="utf-8") as f:
+      f.write(xml)
+  PYEOF
+
+  # ── 2. Write MainActivity.kt with Termux MethodChannel ────────────
+  echo "==> Writing MainActivity.kt"
+  mkdir -p "$KOTLIN_DIR"
+
+  cat > "$MAINACTIVITY" << 'KOTEOF'
   package com.aihub.ai_hub
 
+  import android.content.ComponentName
+  import android.content.Intent
+  import android.os.Build
   import io.flutter.embedding.android.FlutterActivity
   import io.flutter.embedding.engine.FlutterEngine
   import io.flutter.plugin.common.MethodChannel
-  import android.content.Intent
-  import android.os.Build
-  import com.termux.app.RunCommandService
-  import com.termux.app.RunCommandService.ACTION_RUN_COMMAND
 
-  class MainActivity: FlutterActivity() {
-      private val CHANNEL = "com.aihub.ai_hub/termux"
-      private lateinit var channel: MethodChannel
+  class MainActivity : FlutterActivity() {
+
+      private val channelName = "com.aihub.ai_hub/termux"
+
+      // Official Termux RUN_COMMAND API constants (strings, not imports).
+      private val termuxPackage = "com.termux"
+      private val runCommandService = "com.termux.app.RunCommandService"
+      private val actionRunCommand = "com.termux.RUN_COMMAND"
+      private val extraCommandPath = "com.termux.RUN_COMMAND_PATH"
+      private val extraArguments = "com.termux.RUN_COMMAND_ARGUMENTS"
+      private val extraWorkdir = "com.termux.RUN_COMMAND_WORKDIR"
+      private val extraBackground = "com.termux.RUN_COMMAND_BACKGROUND"
+      private val extraSessionAction = "com.termux.RUN_COMMAND_SESSION_ACTION"
 
       override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
           super.configureFlutterEngine(flutterEngine)
-          channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
-          channel.setMethodCallHandler { call, result ->
-              when (call.method) {
-                  "startGateway" -> {
+          MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
+              .setMethodCallHandler { call, result ->
+                  if (call.method == "startGateway") {
+                      val path = call.argument<String>("path") ?: "~/startgateway.sh"
+                      val args = call.argument<List<String>>("args") ?: emptyList()
+                      val workdir = call.argument<String>("workdir") ?: "~"
                       try {
-                          val script = call.argument<String>("script") ?: "startgateway.sh"
-                          val intent = Intent(RunCommandService.ACTION_RUN_COMMAND).apply {
-                              component = android.content.ComponentName(
-                                  "com.termux",
-                                  "com.termux.app.RunCommandService"
-                              )
-                              putExtra(RunCommandService.EXTRA_COMMAND_PATH, script)
-                              putExtra(RunCommandService.EXTRA_BACKGROUND, true)
+                          val intent = Intent().apply {
+                              setComponent(ComponentName(termuxPackage, runCommandService))
+                              action = actionRunCommand
+                              putExtra(extraCommandPath, path)
+                              putExtra(extraArguments, args.toTypedArray())
+                              putExtra(extraWorkdir, workdir)
+                              putExtra(extraBackground, true)
+                              putExtra(extraSessionAction, "0")
                           }
                           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                              applicationContext.startForegroundService(intent)
+                              startForegroundService(intent)
                           } else {
-                              applicationContext.startService(intent)
+                              startService(intent)
                           }
                           result.success(true)
                       } catch (e: Exception) {
                           result.error("TERMUX_ERROR", e.message, null)
                       }
+                  } else {
+                      result.notImplemented()
                   }
-                  else -> result.notImplemented()
               }
-          }
       }
   }
-  EOF
-    fi
-  fi
+  KOTEOF
 
-  echo "Done patching android/ project."
+  echo "==> Done. Android project patched."
