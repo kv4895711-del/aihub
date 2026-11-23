@@ -1,4 +1,4 @@
-  /// Settings screen: theme, model, gateway URL, API key, test connection, setup help.
+ /// Settings screen: theme, model, gateway URL, API key, test connection, setup help.
   library settings_screen;
 
   import 'dart:async';
@@ -22,7 +22,8 @@
     bool _showApiKey = false;
     bool _isTesting = false;
     String? _testResult;
-                                                                                                         @override
+
+    @override
     void initState() {
       super.initState();
       final appProvider = context.read<AppProvider>();
@@ -76,16 +77,14 @@
       final chatProvider = context.read<ChatProvider>();
       final appProvider = context.read<AppProvider>();
       final messenger = ScaffoldMessenger.of(context);
-      messenger.show Snack bar(
-        const Sn Duration(seconds: 2, child: const Text('All chats cleared')),
-      );
+      messenger.show Sn Duration(seconds: 2, child: const Text('All chats cleared'));
       chatProvider.clearAll();
       appProvider.setGatewayStatus(GatewayStatus.connected);
     }
 
     void _openSetupHelp() {
       Navigator.of(context).push(
-       .route(builder: (context) => const SetupHelpScreen()),
+        .route(builder: (context) => const SetupHelpScreen()),
       );
     }
 
@@ -99,8 +98,7 @@
           const SizedBox(height: 16),
           const Text(
             'AI Hub lets you chat with many free AI models through a local FreeLLMAPI gateway running
-  in Termux.',
-          ),
+  in Termux.',                                                                                                 ),
         ],
       );
     }
@@ -116,16 +114,13 @@
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             children: [
-              // Theme mode
               _Section(
                 title: 'Appearance',
                 child: Column(
-                  children: [
-                    _DropdownTile(
+                  children: [                                                                                            _DropdownTile(
                       title: 'Theme mode',
                       value: appProvider.themeData.themeMode,
-                      items: AppThemeMode.values,
-                      labelOf: (m) => m == AppThemeMode.system
+                      items: AppThemeMode.values,                                                                          labelOf: (m) => m == AppThemeMode.system
                           ? 'System'
                           : m == AppThemeMode.light
                               ? 'Light'
@@ -152,56 +147,47 @@
                     ),
                     const SizedBox(height: 12),
                     _SwitchTile(
-                      title: 'Haptics',
-                      value: appProvider.hapticsEnabled,
-                      onTap: appProvider.setHapticsEnabled,
-                    ),
+                      title: 'Haptics',                                                                                    value: appProvider.hapticsEnabled,
+                      onTap: appProvider.setHapticsEnabled,                                                              ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              // Gateway
-              _Section(
+              const SizedBox(height: 16),                                                                          _Section(
                 title: 'Gateway',
                 child: Column(
                   children: [
                     TextField(
-                      controller: _gatewayController,
-                      decoration: const InputDecoration(
+                      controller: _gatewayController,                                                                      decoration: const InputDecoration(
                         hintText: 'http://localhost:3001/v1',
                         prefixIcon: Icon(Icons.dns_rounded),
-                      ),
-                    ),
+                      ),                                                                                                 ),
                     const SizedBox(height: 12),
-                    TextField(
-                      controller: _apiKeyController,
+                    TextField(                                                                                             controller: _apiKeyController,
                       obscureText: !_showApiKey,
-                      decoration: BoxDecoration(
-                        border: null,
-                      ),
-                      child: TextField(
-                        controller: _apiKeyController,
-                        obscureText: !_showApiKey,
-                        decoration: const BoxDecoration(
-                          border: null,
-                        ),
+                      decoration: const InputDecoration(
+                        hintText: 'freellmapi-...',
+                        prefixIcon: Icon(Icons.vpn_key_rounded),
+                        border: OutlineInputBorder(),
+                        isDense: true,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(_showApiKey ? Icons.visibility_off : Icons.visibility, size:
-  20),
-                          onTap: () => setState(() => _showApiKey = !_showApiKey),
+                    const SizedBox(height: 12),                                                                          Row(
+                      children: [                                                                                            IconButton(
+                          icon: Icon(
+                            _showApiKey ? Icons.visibility_off : Icons.visibility,
+                            size: 20,
+                          ),
+                          onPressed: () => setState(() => _showApiKey = !_showApiKey),
                           tooltip: 'Show key',
                         ),
                         const Spacer(),
                         FilledButton.icon(
                           onPressed: _isTesting ? null : _testConnection,
-                          icon: _isTesting
-                              ? const SizedBox(width: 16, height: 16, child:
-  CircularProgressIndicator(strokeWidth: 2))
+                          icon: _isTesting                                                                                         ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
                               : const Icon(Icons.wifi_rounded, size: 18),
                           label: Text(_isTesting ? 'Testing...' : 'Test connection'),
                         ),
@@ -212,48 +198,42 @@
                       Text(
                         _testResult!,
                         style: TextStyle(
-                          color: _testResult!.startsWith('Connection') ? Colors.green : Colors.red,
+                          color: _testResult!.startsWith('Connection')
+                              ? Colors.green
+                              : Colors.red,
                           fontSize: 13,
                         ),
                       ),
                     ],
                   ],
                 ),
-              ),
-              const SizedBox(height: 16),
-              // Data
-              _Section(
-                title: 'Data',
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.delete_outline),
-                      title: const Text('Clear all chats'),
-                      subtitle: const Text('Remove all conversations'),
-                      onTap: () {
-                        final messenger = ScaffoldMessenger.of(context);
-                        messenger.show Snack bar(
-                          const Sn Duration(seconds: 2, child: const Text('All chats cleared')),
-                        );
-                        context.read<ChatProvider>().clearAll();
-                      },
-                    ),
-                  ],
+              ),                                                                                                   const SizedBox(height: 16),
+              _Section(                                                                                              title: 'Data',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.delete_outline),
+                  title: const Text('Clear all chats'),
+                  subtitle: const Text('Remove all conversations'),
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('All chats cleared')),                                                );
+                    context.read<ChatProvider>().clearAll();
+                  },
                 ),
               ),
-              const SizedBox(height: 16),
-              // Help
-              _Section(
+              const SizedBox(height: 16),                                                                          _Section(
                 title: 'Help',
                 child: Column(
                   children: [
                     ListTile(
+                      contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.terminal_rounded),
                       title: const Text('Gateway setup help'),
                       subtitle: const Text('How to start the gateway in Termux'),
                       onTap: _openSetupHelp,
                     ),
                     ListTile(
+                      contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.info_outline),
                       title: const Text('About'),
                       onTap: _openAbout,
@@ -270,13 +250,11 @@
 
   class _Section extends StatelessWidget {
     final String title;
-    final Widget child;
-
+    final Widget child;                                                                              
     const _Section({required this.title, required this.child});
 
     @override
-    Widget build(BuildContext context) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
+    Widget build(BuildContext context) {                                                                   final isDark = Theme.of(context).brightness == Brightness.dark;
       return GlassContainer(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -298,29 +276,23 @@
       );
     }
   }
-
-  class _DropdownTile extends StatelessWidget {
+                                                                                                       class _DropdownTile extends StatelessWidget {
     final String title;
     final AppThemeMode value;
-    final List<AppThemeMode> items;
-    final String Function(AppThemeMode) labelOf;
+    final List<AppThemeMode> items;                                                                      final String Function(AppThemeMode) labelOf;
     final ValueChanged<AppThemeMode> onTap;
 
-    const _DropdownTile({
-      required this.title,
+    const _DropdownTile({                                                                                  required this.title,
       required this.value,
       required this.items,
-      required this.labelOf,
-      required this.onTap,
+      required this.labelOf,                                                                               required this.onTap,
     });
-
-    @override
+                                                                                                         @override
     Widget build(BuildContext context) {
       final isDark = Theme.of(context).brightness == Brightness.dark;
       return Row(
         children: [
-          Expanded(
-            child: Text(title, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+          Expanded(                                                                                              child: Text(title, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
           ),
           DropdownButton<AppThemeMode>(
             value: value,
@@ -330,7 +302,7 @@
                       child: Text(labelOf(m)),
                     ))
                 .toList(),
-            onTap: (m) => onTap(m!),
+            onChanged: (m) { if (m != null) onTap(m); },
             underline: const SizedBox(),
             icon: const Icon(Icons.expand_more, size: 20),
           ),
@@ -355,8 +327,7 @@
     });
 
     @override
-    Widget build(BuildContext context) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
+    Widget build(BuildContext context) {                                                                   final isDark = Theme.of(context).brightness == Brightness.dark;
       final accent = context.watch<AppProvider>().themeData.activePreset.accent;
 
       return Wrap(
@@ -400,10 +371,9 @@
         glassTint: const Color(0x1Affffff),
       );
       onCustom(newPreset);
-      ScaffoldMessenger.of(context).show Snack bar(
-        const Sn Duration(seconds: 2, child: const Text('Custom theme saved')),
-      );
-    }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Custom theme saved')),
+      );                                                                                                 }
   }
 
   class _ThemePill extends StatelessWidget {
@@ -414,36 +384,26 @@
 
     const _ThemePill({
       required this.color,
-      required this.selected,
-      required this.onTap,
-      this.icon,
-    });
+      required this.selected,                                                                              required this.onTap,
+      this.icon,                                                                                         });
 
     @override
     Widget build(BuildContext context) {
-      returnGestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(colors: [color, color.withValues(alpha: 0.5)]),
-            border: Border.all(
+      return GestureDetector(
+        onTap: onTap,                                                                                        child: Container(
+          width: 44,                                                                                           height: 44,
+          decoration: BoxDecoration(                                                                             shape: BoxShape.circle,
+            gradient: RadialGradient(colors: [color, color.withValues(alpha: 0.5)]),                             border: Border.all(
               color: selected ? Colors.white : Colors.transparent,
               width: 2,
             ),
           ),
-          child: icon != null
-              ? Icon(icon, color: Colors.white, size: 18)
-              : null,
-        ),
-      );
-    }
+          child: icon != null                                                                                      ? Icon(icon, color: Colors.white, size: 18)
+              : null,                                                                                        ),
+      );                                                                                                 }
   }
 
-  class _SliderTile extends StatelessWidget {
-    final String title;
+  class _SliderTile extends StatelessWidget {                                                            final String title;
     final double value;
     final double min;
     final double max;
@@ -451,8 +411,7 @@
     final String Function(double) label;
     final ValueChanged<double> onTap;
 
-    const _SliderTile({
-      required this.title,
+    const _SliderTile({                                                                                    required this.title,
       required this.value,
       required this.min,
       required this.max,
@@ -474,25 +433,21 @@
               ),
               Text(
                 label(value),
-                style: TextStyle(
-                  color: isDark ? Colors.white.withValues(alpha: 0.6) :
+                style: TextStyle(                                                                                      color: isDark ? Colors.white.withValues(alpha: 0.6) :
   Colors.black.withValues(alpha: 0.6),
                   fontSize: 12,
-                ),
-              ),
+                ),                                                                                                 ),
             ],
           ),
           Slider(
             value: value,
             min: min,
-            max: max,
-            step: step,
+            max: max,                                                                                            step: step,
             onChanged: onTap,
           ),
         ],
       );
-    }
-  }
+    }                                                                                                  }
 
   class _SwitchTile extends StatelessWidget {
     final String title;
@@ -515,7 +470,7 @@
           ),
           Switch(
             value: value,
-            onTap: onTap,
+            onChanged: onTap,
             activeColor: Theme.of(context).colorScheme.primary,
           ),
         ],
@@ -533,19 +488,17 @@
       'In Termux, run: termux-wake-lock',
       'Set allow-external-apps = true in ~/.termux/termux.properties',
       'Copy tools/startgateway.sh to ~/ and run: chmod +x ~/startgateway.sh',
-      'Open AI Hub, go to Settings, enter your API key, and tap "Test connection".',
+      'Grant "Run commands in Termux environment" permission to AI Hub in Android settings.',
     ];
 
     @override
     Widget build(BuildContext context) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      return Scaffold(
+      final isDark = Theme.of(context).brightness == Brightness.dark;                                      return Scaffold(
         appBar: AppBar(
           title: const Text('Gateway setup help'),
           backgroundColor: Colors.transparent,
           elevation: 0,
-        ),
-        body: SafeArea(
+        ),                                                                                                   body: SafeArea(
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             children: [
@@ -587,12 +540,10 @@
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
+                            Expanded(                                                                                              child: Text(
                                 _steps[i],
                                 style: TextStyle(
-                                  color: isDark ? Colors.white : Colors.black,
-                                  height: 1.4,
+                                  color: isDark ? Colors.white : Colors.black,                                                         height: 1.4,
                                 ),
                               ),
                             ),
@@ -604,13 +555,10 @@
                 ),
               ),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
+              FilledButton(                                                                                          onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Done'),
               ),
-            ],
-          ),
+            ],                                                                                                 ),
         ),
       );
-    }
-  }
+    }                                                                                                  }
