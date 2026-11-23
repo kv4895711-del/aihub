@@ -1,12 +1,6 @@
- /// Chat message model.
+  /// Chat message model.
   library chat_message;
 
-  /// Role of a message in the chat.
-  enum MessageRole { user, ai }
-
-  /// Delivery status of a message.
-  enum MessageStatus {
-    /// Being received/streamed.
     streaming,
 
     /// Complete.
@@ -18,8 +12,7 @@
 
   /// A single chat message.
   class ChatMessage {
-    /// Unique message id.
-    final String id;
+    /// Unique message id.                                                                               final String id;
 
     /// Text content.
     final String text;
@@ -28,21 +21,21 @@
     final MessageRole role;
 
     /// Timestamp.
-    final DateTime timestamp;                                   
+    final DateTime timestamp;
+
     /// Status (streaming, done, error).
     final MessageStatus status;
-
-    /// Whether the AI is still streaming this message.
+                                                                                                         /// Whether the AI is still streaming this message.
     final bool isStreaming;
 
+    const ChatMessage({
       required this.id,
       required this.text,
       required this.role,
       required this.timestamp,
       this.status = MessageStatus.done,
       this.isStreaming = false,
-    });
-
+    });                                                                                              
     /// Copy with optional overrides.
     ChatMessage copyWith({
       String? id,
@@ -52,7 +45,8 @@
       MessageStatus? status,
       bool? isStreaming,
     }) {
-      return ChatMessage(                                               id: id ?? this.id,
+      return ChatMessage(
+        id: id ?? this.id,
         text: text ?? this.text,
         role: role ?? this.role,
         timestamp: timestamp ?? this.timestamp,
@@ -68,8 +62,7 @@
           'role': role.index,
           'timestamp': timestamp.toIso8601String(),
           'status': status.index,
-          'isStreaming': isStreaming ? 1 : 0,
-        };
+          'isStreaming': isStreaming ? 1 : 0,                                                                };
 
     /// Create from map (for DB retrieval).
     factory ChatMessage.fromMap(Map<String, dynamic> map) {
@@ -80,7 +73,8 @@
         timestamp: DateTime.parse(map['timestamp'] as String),
         status: map['status'] != null
             ? MessageStatus.values[map['status'] as int]
-            : MessageStatus.done,                                       isStreaming: map['isStreaming'] == 1,
+            : MessageStatus.done,
+        isStreaming: map['isStreaming'] == 1,
       );
     }
   }
