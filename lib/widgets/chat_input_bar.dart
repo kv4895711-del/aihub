@@ -28,6 +28,13 @@
   }
 
   class _ChatInputBarState extends State<ChatInputBar> {
+    void _submit() {
+      final text = widget.controller.text.trim();
+      if (text.isEmpty) return;
+      widget.onSend(text);
+      widget.controller.clear();
+    }
+
     @override
     Widget build(BuildContext context) {
       final appProvider = context.watch<AppProvider>();
@@ -35,83 +42,91 @@
       final isDark = Theme.of(context).brightness == Brightness.dark;
 
       return Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Divider(
             height: 0.5,
-            color: Theme.of(context).dividerColor?.withValues(alpha: 0.5),
+            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
-            child: Row(
+            child: Row(                                                                                            crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 // Model selector chip
-                _ModelChip(),
-                const SizedBox(width: 12),
+                const _ModelChip(),
+                const SizedBox(width: 10),
                 // Text field
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                    constraints: const BoxConstraints(minHeight: 44),
                     decoration: BoxDecoration(
                       color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        width: 0.5,
+                        color: Colors.white.withValues(alpha: isDark ? 0.15 : 0.4),
+                        width: 0.8,
                       ),
                     ),
                     child: TextField(
                       controller: widget.controller,
-                      maxLines: null,
+                      maxLines: 5,
+                      minLines: 1,
                       textInputAction: TextInputAction.send,
-                      onSubmitted: (text) {
-                        if (text.trim().isNotEmpty) {
-                          widget.onSend(text);
-                          widget.controller.clear();
-                        }
-                      },
-                      style: Theme.of(context).theme.textTheme.bodyLarge,
-                      decoration: const BoxDecoration(
-                        border: null,
+                      onSubmitted: (_) => _submit(),
+                      style: Theme.of(context).textTheme.bodyLarge,
+                      decoration: const InputDecoration(
+                        hintText: 'Message AI Hub...',
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: null,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 // Mic button
-                _IconButton(
-                  icon: Icons.mic_none_outlined,
-                  onPressed: () {},
-                  tooltip: 'Voice input (Phase 7)',
+                IconButton(
+                  tooltip: 'Voice input',
+                  icon: Icon(
+                    Icons.mic_none_rounded,
+                    color: preset.accent,
+                    size: 22,
+                  ),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                    );
+                  },
                 ),
-                const SizedBox(width: 8),
                 // Send / Stop button
-                Container(
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Theme.of(context).colorScheme.primary,
-                        Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                        preset.accent,
+                        preset.accent.withValues(alpha: 0.75),
                       ],
                     ),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                        color: preset.accent.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.send, size: 20),
-                    onPressed: widget.isGenerating ? widget.onStop : () {
-                      final text = widget.controller.text.trim();
-                      if (text.isNotEmpty) {
-                        widget.onSend(text);
-                        widget.controller.clear();
-                      }
-                    },
-                    color: Theme.of(context).colorScheme.onPrimary,
+                    padding: EdgeInsets.zero,
+                    icon: Icon(
+                      widget.isGenerating ? Icons.stop_rounded : Icons.arrow_upward_rounded,
+                      size: 22,
+                      color: preset.accentOnSurface,
+                    ),
+                    onPressed: widget.isGenerating ? widget.onStop : _submit,
                   ),
                 ),
               ],
@@ -124,56 +139,40 @@
 
   /// Model selector chip — opens bottom sheet (Phase 5).
   class _ModelChip extends StatelessWidget {
+    const _ModelChip();
+
     @override
     Widget build(BuildContext context) {
       final appProvider = context.watch<AppProvider>();
-      returnGestureDetector(
+      final preset = appProvider.themeData.activePreset;
+
+      return GestureDetector(
         onTap: () {
-          // Phase 5: open bottom sheet model selector.
-          ScaffoldMessenger.of(context).show Snack bar(
-            const Sn Duration(seconds: 2, child: const Text('Model selector coming in Phase 5')),
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Model selector coming in Phase 5')),
           );
         },
         child: GlassPill(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.model_training, size: 16, color: Theme.of(context).colorScheme.primary),
+              Icon(Icons.auto_awesome_rounded, size: 15, color: preset.accent),
               const SizedBox(width: 6),
-              Text(
-                appProvider.selectedModel,
-                style: Theme.of(context).theme.textTheme.labelLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 90),
+                child: Text(
+                  appProvider.selectedModel,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: preset.accent,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
-        ),
-      );
-    }
-  }
-
-  /// Small circular icon button.
-  class _IconButton extends StatelessWidget {
-    final/icons? icon;
-    final VoidCallback onPressed;
-    final String tooltip;
-
-    const _IconButton({
-      required this.icon,
-      required this.onPressed,
-      required this.tooltip,
-    });
-
-    @override
-    Widget build(BuildContext context) {
-      return Tooltip(
-        message: tooltip,
-        child: IconButton(
-          icon: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
-          onPressed: onPressed,
         ),
       );
     }
